@@ -14,5 +14,7 @@ Doorkeeper.configure do
     current_user || warden.authenticate!(scope: :user)
   end
 
+  application_class 'Auth::RelyingParty'
+
   default_scopes  :openid
 end
