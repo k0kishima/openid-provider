@@ -51,3 +51,5 @@ gem "devise", "~> 4.8"
 gem "doorkeeper", "~> 5.5"
 
 gem "doorkeeper-openid_connect", "~> 1.8"
+
+gem "jwt", "~> 2.3"
