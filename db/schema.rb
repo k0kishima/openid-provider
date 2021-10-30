@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_22_005126) do
+ActiveRecord::Schema.define(version: 2021_10_30_225447) do
 
   create_table "oauth_access_grants", charset: "utf8mb4", collation: "utf8mb4_bin", force: :cascade do |t|
     t.bigint "resource_owner_id", null: false
@@ -21,6 +21,8 @@ ActiveRecord::Schema.define(version: 2021_10_22_005126) do
     t.datetime "created_at", null: false
     t.datetime "revoked_at"
     t.string "scopes", default: "", null: false
+    t.string "code_challenge"
+    t.string "code_challenge_method"
     t.index ["application_id"], name: "index_oauth_access_grants_on_application_id"
     t.index ["resource_owner_id"], name: "index_oauth_access_grants_on_resource_owner_id"
     t.index ["token"], name: "index_oauth_access_grants_on_token", unique: true
