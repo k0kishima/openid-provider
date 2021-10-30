@@ -53,3 +53,5 @@ gem "doorkeeper", "~> 5.5"
 gem "doorkeeper-openid_connect", "~> 1.8"
 
 gem "jwt", "~> 2.3"
+
+gem "rack-cors", "~> 1.1"
