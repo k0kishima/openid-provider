@@ -10,26 +10,66 @@ RSpec.describe 'OIDC authorize request', type: :request do
     let(:client_id) { rp.uid }
     let(:redirect_uri) { rp.redirect_uri }
     let(:scope) { 'openid' }
+    let(:code_challenge) { '' }
+    let(:code_challenge_method) { '' }
     let(:params) do
       {
         response_type: response_type,
         client_id: client_id,
         redirect_uri: redirect_uri,
         scope: scope,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method,
       }
     end
 
     context 'when a user is already signed in' do
       include_context 'signed in as a user'
 
+      shared_examples 'a_redirection_to_RP_callback_uri' do
+        it 'redirects to a url which is specified by RP' do
+          expect(response.status).to eq 302
+          expect(response.location).to eq "#{rp.redirect_uri}?code=#{code}"
+        end
+      end
+
       before { subject }
 
       context 'when parameters are valid' do
         let(:code) { Doorkeeper.config.access_grant_model.take.token }
 
-        it 'redirects to sign in form' do
-          expect(response.status).to eq 302
-          expect(response.location).to eq "#{rp.redirect_uri}?code=#{code}"
+        it_behaves_like 'a_redirection_to_RP_callback_uri'
+
+        context 'when also PKCE params given' do
+          context 'when code_challenge_method is "S256"' do
+            let(:code_challenge_method) { 'S256' }
+
+            context 'when code_challenge is specified' do
+              let(:code_verifier) { SecureRandom.alphanumeric(128) }
+              let(:code_challenge) { Base64.urlsafe_encode64(OpenSSL::Digest::SHA256.digest(code_verifier), padding: false) }
+              let(:access_grant) { Doorkeeper.config.access_grant_model.take }
+
+              it_behaves_like 'a_redirection_to_RP_callback_uri'
+
+              it 'saves code_challenge and code_challenge_method' do
+                expect(access_grant.code_challenge).to eq code_challenge
+                expect(access_grant.code_challenge_method).to eq code_challenge_method
+              end
+            end
+
+            # TODO: メソッドだけ指定されてチャレンジが空のパターンはエラーにすべきでは？
+            context 'when code_challenge is not specified' do
+              let(:code_challenge) { '' }
+
+              it_behaves_like 'a_redirection_to_RP_callback_uri'
+            end
+          end
+
+          # TODO: It should be permitted S256 only as code_challenge_method.
+          # https://github.com/k0kishima/openid-provider/issues/2
+          xcontext 'when code_challenge_method is not "S256"' do
+            let(:code_challenge_method) { 'plain' }
+          end
         end
       end
 

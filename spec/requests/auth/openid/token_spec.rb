@@ -7,6 +7,8 @@ RSpec.describe 'OIDC token request', type: :request do
     subject { post oauth_token_path, params: params }
 
     let(:rp) { create(:auth_relying_party) }
+    let(:code_challenge) { '' }
+    let(:code_challenge_method) { '' }
     let(:access_grant) do
       create(
         :auth_access_grant,
@@ -14,7 +16,9 @@ RSpec.describe 'OIDC token request', type: :request do
         redirect_uri: redirect_uri,
         resource_owner_id: user.id,
         expires_in: code_expires_in,
-        scopes: scopes
+        scopes: scopes,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method,
       )
     end 
     let(:code_expires_in) { 3.minutes }
@@ -24,6 +28,7 @@ RSpec.describe 'OIDC token request', type: :request do
     let(:code) { access_grant.token }
     let(:scopes) { %w(openid) }
     let(:grant_type) { 'authorization_code' }
+    let(:code_verifier_from_rp) { '' }
     let(:params) do
       {
         grant_type: grant_type,
@@ -31,6 +36,7 @@ RSpec.describe 'OIDC token request', type: :request do
         client_id: client_id,
         client_secret: client_secret,
         redirect_uri: redirect_uri,
+        code_verifier: code_verifier_from_rp,
       }
     end
 
@@ -106,6 +112,29 @@ RSpec.describe 'OIDC token request', type: :request do
         it 'does not response a id token' do 
           json = JSON.parse(response.body)
           expect(json.key?('id_token')).to be false
+        end
+      end
+
+      context 'when the access_grant has PKCE properties' do
+        let(:code_verifier) { SecureRandom.alphanumeric(128) }
+        let(:code_challenge) { Base64.urlsafe_encode64(OpenSSL::Digest::SHA256.digest(code_verifier), padding: false) }
+        let(:code_challenge_method) { 'S256' }
+
+        context 'when code_verifier is valid' do
+          let(:code_verifier_from_rp) { code_verifier }
+
+          it do
+            expect(response.status).to eq 200
+          end
+        end
+
+        context 'when code_verifier is invalid' do
+          let(:code_verifier_from_rp) { 'foobar' }
+
+          it do
+            expect(response.status).to eq 400
+            expect(response.body).to be_include I18n.t('doorkeeper.errors.messages.invalid_grant')
+          end
         end
       end
     end
