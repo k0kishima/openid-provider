@@ -1,9 +1,15 @@
 # README
 
+## clone this repository
+
+```bash
+git clone git@github.com:k0kishima/openid-provider.git
+```
+
 ## 鍵ペアの生成
 
 ```bash
-cd /path/to/project
+cd openid-provider
 ssh-keygen -t rsa -P "" -b 4096 -m PEM -f jwtRS256.key
 ```
 
@@ -18,13 +24,33 @@ docker container run --name my-open-id-provider -it --add-host=host.docker.inter
 
 ## DB初期化
 
-※ 事前にDBコンテナが作成されていること
+事前にDBコンテナが作成されていること
+
+以下、生成の一例
 
 e.g.
 ```bash
 docker container run --name dev-mysql -itd --add-host=host.docker.internal:host-gateway -e MYSQL_ROOT_PASSWORD='password' -p 33306:3306 mysql:8.0.23
 ```
 
+`config/database.yml` を編集して上記に接続できる状態にした上で、migrateを実行
+
 ```bash
 docker container exec my-open-id-provider bin/rake db:create db:migrate
 ```
+
+## RPの登録
+
+下記にアクセスしてRP（認証を受けるアプリケーション）を登録
+
+http://localhost:33000/auth/openid/applications/new
+
+未ログインだと以下にリダイレクトされるので、フッターの "Sign up" のリンクよりユーザー登録する
+
+http://localhost:33000/users/sign_in
+
+※ ここではローカル開発環境での利用を前提としているのでパブリックなURLから管理者登録できるものとする
+
+ユーザー登録後、RPの登録フォームが表示されるのでRPに受け口として作ってあるコールバックURIやRPのタイプ（コンフィデンシャルクライアントかどうか）などを入力して送信する
+
+
